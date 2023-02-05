@@ -1,5 +1,7 @@
 import argparse
 import colorama
+import traceback
+import sys
 
 from subprocess import Popen, CalledProcessError, PIPE
 
@@ -7,22 +9,28 @@ from awsume.awsumepy import hookimpl, safe_print
 from awsume.awsumepy.lib import profile
 from awsume.awsumepy.lib.logger import logger
 
-# we print only N lines of output to minimize ykman stack trace spam
+# Truncate proxied subprocess output to avoid stack trace spam
 MAX_OUTPUT_LINES = 2
 
 
+# Map an MFA serial to a YubiKey OATH account
 def find_item(config, mfa_serial):
     config = config.get('yubikey')
+    item = None
     if not config:
         logger.debug('No config subsection')
-        return
-    elif type(config) != dict:
+    elif type(config) == str:
+        item = config
+    elif type(config) == dict:
+        item = config.get(mfa_serial)
+    else:
         logger.debug('Malformed config subsection')
         return
-    item = config.get(mfa_serial)
     if not item:
-        logger.debug('No vault item specified for this mfa_serial')
+        logger.debug('No OATH account specified for this mfa_serial')
     return item
+
+# Find the MFA serial for a given AWS profile.
 
 
 def get_mfa_serial(profiles, target_name):
@@ -33,8 +41,15 @@ def get_mfa_serial(profiles, target_name):
     return mfa_serial
 
 
-def describe_failure(stderr):
-    return stderr.decode().strip('\n')
+# Make a YubiKey error message more succinct before safe_printing it.
+# Return None if it's not worth printing (e.g. an expected error).
+def beautify(msg):
+    if 'No YubiKey detected!' in msg:
+        return None
+    else:
+        return msg
+
+# Call 1Password to get an OTP for a given vault item.
 
 
 def get_otp(title):
@@ -46,12 +61,13 @@ def get_otp(title):
             msg = yk.stderr.readline().decode()
             if msg == '' and yk.poll() is not None:
                 break
-            elif msg != '':
-                if linecount < MAX_OUTPUT_LINES:
+            elif msg != '' and linecount < MAX_OUTPUT_LINES:
+                msg = beautify(msg)
+                if msg:
                     safe_print(msg, colorama.Fore.CYAN, end='')
                     linecount += 1
-                else:
-                    logger.debug(msg.strip('\n'))
+            else:
+                logger.debug(msg.strip('\n'))
 
         if yk.returncode != 0:
             return None
@@ -68,14 +84,29 @@ def canonicalize(config, profiles, name):
     else:
         return None
 
+# Print sad message to console with instructions for filing a bug report.
+# Log stack trace to stderr in lieu of safe_print.
+
+
+def handle_crash():
+    safe_print('Error invoking YubiKey plugin; please file a bug report:\n  %s' %
+               ('https://github.com/xeger/awsume-yubikey-plugin/issues/new/choose'), colorama.Fore.RED)
+    traceback.print_exc(file=sys.stderr)
+
 
 @ hookimpl
 def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: dict):
-    target_profile_name = canonicalize(
-        config, profiles, arguments.target_profile_name)
-    if target_profile_name != None:
-        mfa_serial = get_mfa_serial(profiles, target_profile_name)
-        if mfa_serial and not arguments.mfa_token:
-            item = find_item(config, mfa_serial)
-            if item:
-                arguments.mfa_token = get_otp(item)
+    try:
+        target_profile_name = canonicalize(
+            config, profiles, arguments.target_profile_name)
+        if target_profile_name != None:
+            mfa_serial = get_mfa_serial(profiles, target_profile_name)
+            if mfa_serial and not arguments.mfa_token:
+                item = find_item(config, mfa_serial)
+                if item:
+                    arguments.mfa_token = get_otp(item)
+                    if arguments.mfa_token:
+                        safe_print('Obtained MFA token from 1Password item: %s' %
+                                   (item), colorama.Fore.CYAN)
+    except Exception:
+        handle_crash()
