@@ -1,16 +1,16 @@
 from setuptools import setup
 
 setup(
-    name='awsume-1password-plugin',
+    name='awsume-yubikey-plugin',
     version='1.0.0',
-    description='Automates awsume MFA entry via 1Password CLI.',
+    description='Automates awsume MFA entry via YubiKey CLI.',
     entry_points={
         'awsume': [
-            '1password = 1password'
+            'yubikey = yubikey'
         ]
     },
     author='Tony Spataro',
     author_email='pypi@tracker.xeger.net',
-    url='https://github.com/xeger/awsume-1password-plugin',
-    py_modules=['1password'],
+    url='https://github.com/xeger/awsume-yubikey-plugin',
+    py_modules=['yubikey'],
 )

@@ -9,7 +9,7 @@ from awsume.awsumepy.lib.logger import logger
 
 
 def find_item(config, mfa_serial):
-    config = config.get('1password')
+    config = config.get('yubikey')
     if not config:
         logger.debug('No config subsection')
         return
