@@ -32,24 +32,46 @@ pipx inject awsume awsume-yubikey-plugin
 ### Configure AWSume
 
 This plugin needs to know which YubiKey OATH token to use for each MFA token.
-You can specify this information in a new subsection of `~/.awsume/config.yaml`, that maps MFA token ARNs to the correspodning YubiKey item that can generate MFA codes.
+You can specify this information your AWSume configuration file.
 
-An example:
 
 ```yaml
+# ~/.awsume/config.yaml
+
 colors: true
-fuzzy-match: false
-yubikey:
-  "arn:aws:iam::12345:mfa/tony": "AWS (12345, tony)"
+yubikey: AWS
 ```
 
-In this example, when I assume roles via my AWS account 12345, I use an MFA token associated with the IAM user `tony` that I have configured in the [AWS Console](https://us-east-1.console.aws.amazon.com/iamv2/home).
+In this example, I have only one MFA token shared among all my accounts (which belong to the same organization).
+
 I have a corresponding YubiKey account that looks like this:
 
 ```sh
 $ ykman oath accounts list
 
+  AWS
+```
+
+### Multiple MFA Tokens
+
+```yaml
+# ~/.awsume/config.yaml
+
+colors: true
+yubikey:
+  "arn:aws:iam::12345:mfa/tony": "AWS (12345, tony)"
+  "arn:aws:iam::67890:mfa/xeger": "AWS (67890, xeger)"
+```
+
+In this example, I work with two login accounts belonging to two different organizations: one where my name is `tony` and another where my name is `xeger`.
+
+I have corresponding YubiKey accounts that look like this:
+
+```sh
+$ ykman oath accounts list
+
   AWS (12345, tony)
+  AWS (67890, xeger)
 ```
 
 ## Usage
