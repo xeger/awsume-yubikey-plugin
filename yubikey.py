@@ -49,7 +49,7 @@ def beautify(msg):
     else:
         return msg
 
-# Call 1Password to get an OTP for a given vault item.
+# Call YubiKey to get an OTP for a given vault item.
 
 
 def get_otp(title):
@@ -106,7 +106,7 @@ def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: d
                 if item:
                     arguments.mfa_token = get_otp(item)
                     if arguments.mfa_token:
-                        safe_print('Obtained MFA token from 1Password item: %s' %
+                        safe_print('Obtained MFA token from YubiKey item: %s' %
                                    (item), colorama.Fore.CYAN)
     except Exception:
         handle_crash()
