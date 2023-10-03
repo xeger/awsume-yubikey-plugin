@@ -10,4 +10,4 @@ preview:
 	pip3 install .
 
 publish:
-	twine upload --identity F4DD3CEDB0E24417 --sign --username xeger dist/*
+	twine upload dist/*

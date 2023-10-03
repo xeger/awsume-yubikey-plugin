@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='awsume-yubikey-plugin',
-    version='1.1.1',
+    version='1.2.2',
     description='Automates awsume MFA entry via YubiKey CLI.',
     entry_points={
         'awsume': [
