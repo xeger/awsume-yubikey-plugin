@@ -74,7 +74,7 @@ def get_otp(title):
 
         if yk.returncode != 0:
             return None
-        return yk.stdout.readline().decode().strip("\n")
+        return yk.stdout.readline().decode().strip("\r\n")
     except FileNotFoundError:
         logger.error("Failed: missing `ykman` command")
         return None
