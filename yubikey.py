@@ -109,7 +109,8 @@ def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: d
             first_profile_name = role_chain[0]
             first_profile = profiles.get(first_profile_name)
             source_credentials = profile_lib.profile_to_credentials(first_profile)
-            cache_file_name = "aws-credentials-" + source_credentials.get("AccessKeyId")
+            access_key_id = source_credentials.get("AccessKeyId")
+            cache_file_name = f"aws-credentials-{access_key_id if access_key_id else 'undefined'}"
             cache_session = cache_lib.read_aws_cache(cache_file_name)
             valid_cache_session = cache_session and cache_lib.valid_cache_session(
                 cache_session
