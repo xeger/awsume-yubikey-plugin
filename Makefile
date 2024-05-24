@@ -9,5 +9,8 @@ clean:
 preview:
 	pip3 install .
 
+uninstall:
+	pip3 uninstall awsume-yubikey-plugin
+
 publish:
 	twine upload dist/*
