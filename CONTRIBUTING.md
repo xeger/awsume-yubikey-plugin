@@ -8,7 +8,7 @@ Install `pipenv` and create a venv for development of this package.
 
 ```sh
 pip3 install pipenv
-pipenv install
+pipenv install --dev
 ```
 
 ### AWSume Configuration
@@ -61,6 +61,9 @@ Now you can invoke `awsume` to test your changes.
 ### Publish to PyPI
 
 ```sh
+# Ensure twine et al are installed
+pipenv install --dev
+
 # Enter the venv to ensure that we will build the package correctly
 pipenv shell
 
