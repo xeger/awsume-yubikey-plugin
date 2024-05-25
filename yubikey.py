@@ -112,7 +112,8 @@ def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: d
             mfa_serial = profile_lib.get_mfa_serial(profiles, first_profile_name)
             first_profile = profiles.get(first_profile_name)
 
-            # AWS API Keys are only provided by SOURCE PROFILES
+            # AWS API Keys are provided by SOURCE_PROFILES
+            # and sometimes by TARGET_PROFILEs (depends on their definition in the .aws/config)
             source_credentials = profile_lib.profile_to_credentials(first_profile)
             access_key_id = source_credentials.get("AccessKeyId")
 
