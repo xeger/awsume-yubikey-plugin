@@ -1,10 +1,9 @@
 import argparse
-import colorama
-import traceback
 import sys
+import traceback
+from subprocess import Popen, PIPE
 
-from subprocess import Popen, CalledProcessError, PIPE
-
+import colorama
 from awsume.awsumepy import hookimpl, safe_print
 from awsume.awsumepy.lib import cache as cache_lib
 from awsume.awsumepy.lib import profile as profile_lib
@@ -20,9 +19,9 @@ def find_item(config, mfa_serial):
     item = None
     if not config:
         logger.debug("No config subsection")
-    elif type(config) == str:
+    elif isinstance(config, str):
         item = config
-    elif type(config) == dict:
+    elif isinstance(config, dict):
         item = config.get(mfa_serial)
     else:
         logger.debug("Malformed config subsection")
@@ -102,26 +101,30 @@ def pre_get_credentials(config: dict, arguments: argparse.Namespace, profiles: d
         if not profiles.get(target_profile_name):
             logger.debug("No profile %s found, skip plugin flow" % target_profile_name)
             return None
-        if target_profile_name != None:
+        if target_profile_name is not None:
+            # In case that a duration is requested or an empty target_profile_name is provided or
+            # the target_profile does not contain a role_arn, then
+            # only the [TARGET_PROFILE] is returned, else [SOURCE_PROFILE, TARGET_PROFILE]
             role_chain = profile_lib.get_role_chain(
                 config, arguments, profiles, target_profile_name
             )
             first_profile_name = role_chain[0]
+            mfa_serial = profile_lib.get_mfa_serial(profiles, first_profile_name)
             first_profile = profiles.get(first_profile_name)
+
+            # AWS API Keys are provided by SOURCE_PROFILES
+            # and sometimes by TARGET_PROFILEs (depends on their definition in the .aws/config)
             source_credentials = profile_lib.profile_to_credentials(first_profile)
             access_key_id = source_credentials.get("AccessKeyId")
-            cache_file_name = f"aws-credentials-{access_key_id if access_key_id else 'undefined'}"
-            cache_session = cache_lib.read_aws_cache(cache_file_name)
-            valid_cache_session = cache_session and cache_lib.valid_cache_session(
-                cache_session
-            )
 
-            mfa_serial = profile_lib.get_mfa_serial(profiles, first_profile_name)
-            if (
-                mfa_serial
-                and (not valid_cache_session or arguments.force_refresh)
-                and not arguments.mfa_token
-            ):
+            request_otp = True
+            if access_key_id:
+                cache_file_name = f"aws-credentials-{access_key_id}"
+                cache_session = cache_lib.read_aws_cache(cache_file_name)
+                valid_cache_session = cache_session and cache_lib.valid_cache_session(cache_session)
+                request_otp = not valid_cache_session or arguments.force_refresh
+
+            if mfa_serial and not arguments.mfa_token and request_otp:
                 item = find_item(config, mfa_serial)
                 if item:
                     arguments.mfa_token = get_otp(item)
